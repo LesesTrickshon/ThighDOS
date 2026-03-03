@@ -1,2 +1,2 @@
-<h1 style="text-align:center;">ThighDOS</h1>
-<p style="text-align:center;">Hallo Herr Schlehan :D</p>
+<h1 align="center">ThighDOS</h1>
+<p align="center">Hallo Herr Schlehan :D</p>
