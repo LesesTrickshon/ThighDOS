@@ -18,7 +18,7 @@ function App() {
         <p>By using this software you (the user) are liable for any damages!</p>
         <button
           onClick={() => {
-            const warning: any = document.getElementById("warning");
+            const warning = document.getElementById("warning");
             if (warning) {
               warning.style.display = "none";
             }
@@ -28,12 +28,17 @@ function App() {
         </button>
       </div>
 
-      <button>New DOS List</button>
+      <button className="option">New DOS List</button>
       <button
+        className="option"
         onClick={() => {
           const mqttChat = document.getElementById("mqtt-chat");
-          if (mqttChat) {
+          if (mqttChat && mqttChat.style.display == "") {
+            console.log("Moin");
+            console.log(`display: ${mqttChat.style.display}`);
             mqttChat.style.display = "none";
+          } else if (mqttChat && mqttChat.style.display == "none") {
+            mqttChat.style.display = "";
           }
         }}
       >
