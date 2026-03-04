@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
 
-const BROKER_URL = 'ws://172.30.148.28:9001'; // Using WebSockets for browser-based MQTT
-const DEFAULT_TOPIC = 'ThighDOS/Chat';
+import mqtt from 'mqtt';
+
+const BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL || 'ws://localhost:9001';
+const DEFAULT_TOPIC = import.meta.env.VITE_DEFAULT_TOPIC || 'ThighDOS/Chat';
 
 const MqttPanel: React.FC = () => {
     const [client, setClient] = useState<mqtt.MqttClient | null>(null);
