@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
 
-import mqtt from 'mqtt';
 
 const BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL || 'ws://localhost:9001';
 const DEFAULT_TOPIC = import.meta.env.VITE_DEFAULT_TOPIC || 'ThighDOS/Chat';
