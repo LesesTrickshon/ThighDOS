@@ -6,13 +6,13 @@ function App() {
   return (
     <>
       <div className="header">
-        <h1>ThighDOS</h1>
-        <p>NETWORK STRESS TESTING SUITE v1.0</p>
+        <h1>ThighDOS ♡</h1>
+        <p>⋆｡°✩ cute network tool ✩°｡⋆</p>
       </div>
 
-      <div className="panel" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#ff0000", fontSize: "0.9rem" }}>
-          [WARNING] WE ARE NOT LIABLE FOR ACTIONS TAKEN WITH THIS TOOL. AUTHORIZED USE ONLY.
+      <div className="warning-panel" style={{ marginBottom: "20px" }}>
+        <span>
+          ⚠️ Please use this super cute tool responsibly! We are not liable for any actions taken. Authorized use only! (´｡• ω •｡`)
         </span>
       </div>
 
