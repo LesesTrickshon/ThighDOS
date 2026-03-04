@@ -15,6 +15,7 @@ Bevor du startest, stelle sicher, dass folgende Software auf deinem System insta
 2. **Rust & Cargo** (Für das Backend)
    - Öffne dein Terminal und führe diesen Befehl aus: 
      `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+   - **Wichtig nach der Installation:** Starte dein Terminal neu oder lade die Umgebungsvariablen direkt mit: `source "$HOME/.cargo/env"`
 3. **Erforderliche System-Abhängigkeiten** 
    - **Mac-Nutzer (WICHTIG):** Du musst die Xcode Command Line Tools installieren! Führe aus: `xcode-select --install`
    - Linux/Windows-Nutzer finden die Liste [hier bei Tauri](https://tauri.app/v1/guides/getting-started/prerequisites).
