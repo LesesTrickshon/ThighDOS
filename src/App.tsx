@@ -8,14 +8,7 @@ import MqttPanel from "./components/MqttPanel";
 
 function App() {
   const splash = "Nenn es ThighDOS ~Tobias Rieger 2026";
-  const warning = document.getElementById("warning");
 
-  // runs at start
-  useEffect(() => {
-    if (warning) {
-      warning.style.display = "none";
-    }
-  }, []);
   return (
     <>
       <div className="top">
@@ -27,6 +20,7 @@ function App() {
         <p>By using this software you (the user) are liable for any damages!</p>
         <button
           onClick={() => {
+            const warning = document.getElementById("warning");
             if (warning) {
               warning.style.display = "none";
             }
