@@ -28,7 +28,26 @@ function App() {
         </button>
       </div>
 
-      <main style={{ maxWidth: "800px", margin: "20px auto", padding: "0 20px" }}>
+      <button>New DOS List</button>
+      <button
+        onClick={() => {
+          const mqttChat = document.getElementById("mqtt-chat");
+          if (mqttChat) {
+            mqttChat.style.display = "none";
+          }
+        }}
+      >
+        Open MQTT Client
+      </button>
+
+      <main
+        style={{
+          maxWidth: "800px",
+          margin: "20px auto",
+          padding: "0 20px",
+        }}
+        id="mqtt-chat"
+      >
         <MqttPanel />
       </main>
     </>
