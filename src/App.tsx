@@ -1,29 +1,22 @@
-// Functionalitys Imports:
 import "./App.css";
 
-// Icon imports:
 import MqttPanel from "./components/MqttPanel";
 
 function App() {
-  const splash = "Splash Text and stuff";
-
   return (
     <>
       <div className="header">
         <h1>ThighDOS</h1>
-        <p>{splash}</p>
+        <p>NETWORK STRESS TESTING SUITE v1.0</p>
       </div>
 
-      <div className="sketch-box disclaimer" style={{ marginBottom: "20px" }}>
-        <span>We (the ThighDOS Developers) are not viable for anything that the user does with this tool.</span>
-        <button className="btn">Ok</button>
+      <div className="panel" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ color: "#ff0000", fontSize: "0.9rem" }}>
+          [WARNING] WE ARE NOT LIABLE FOR ACTIONS TAKEN WITH THIS TOOL. AUTHORIZED USE ONLY.
+        </span>
       </div>
 
-      <button className="btn btn-wide">Create New Requests</button>
-
-      <div className="sketch-box request-panel">
-        <MqttPanel />
-      </div>
+      <MqttPanel />
     </>
   );
 }
