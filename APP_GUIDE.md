@@ -15,7 +15,9 @@ Bevor du startest, stelle sicher, dass folgende Software auf deinem System insta
 2. **Rust & Cargo** (Für das Backend)
    - Öffne dein Terminal und führe diesen Befehl aus: 
      `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-3. **Erforderliche System-Abhängigkeiten** (Mac-Nutzer haben meist schon alles durch Xcode Command Line Tools, Linux/Windows-Nutzer finden die Liste [hier bei Tauri](https://tauri.app/v1/guides/getting-started/prerequisites)).
+3. **Erforderliche System-Abhängigkeiten** 
+   - **Mac-Nutzer (WICHTIG):** Du musst die Xcode Command Line Tools installieren! Führe aus: `xcode-select --install`
+   - Linux/Windows-Nutzer finden die Liste [hier bei Tauri](https://tauri.app/v1/guides/getting-started/prerequisites).
 
 ---
 
@@ -24,7 +26,11 @@ Bevor du startest, stelle sicher, dass folgende Software auf deinem System insta
 Wenn du an der App arbeiten möchtest oder sie einfach testen willst, nutzt du den Development-Modus. Dieser startet das React-Frontend mit Hot-Reloading (Änderungen im Code sind sofort sichtbar) und verpackt es in das Rust-Desktop-Fenster.
 
 1. Öffne das Terminal im Projektordner (`ThighDOS`).
-2. Führe folgenden Befehl aus:
+2. **(Zuerst!)** Installiere alle benötigten Code-Pakete:
+   ```bash
+   npm install
+   ```
+3. Führe folgenden Befehl aus, um die App zu starten:
    ```bash
    npx tauri dev
    ```
