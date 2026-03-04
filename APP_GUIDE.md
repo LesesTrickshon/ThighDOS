@@ -10,8 +10,8 @@ Hier erfährst du, wie du das Projekt startest, entwickelst und als fertige App 
 
 Bevor du startest, stelle sicher, dass folgende Software auf deinem System installiert ist:
 
-1. **Node.js & npm** (Für das Frontend)
-   - Lade Node.js von der [offiziellen Website](https://nodejs.org/) herunter.
+1. **Bun** (Als superschneller Ersatz für Node.js/npm)
+   - Lade Bun herunter. Öffne dein Terminal und führe `curl -fsSL https://bun.sh/install | bash` aus. (Windows-Nutzer: `powershell -c "irm bun.sh/install.ps1|iex"`)
 2. **Rust & Cargo** (Für das Backend)
    - Öffne dein Terminal und führe diesen Befehl aus: 
      `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
@@ -28,11 +28,11 @@ Wenn du an der App arbeiten möchtest oder sie einfach testen willst, nutzt du d
 1. Öffne das Terminal im Projektordner (`ThighDOS`).
 2. **(Zuerst!)** Installiere alle benötigten Code-Pakete:
    ```bash
-   npm install
+   bun install
    ```
 3. Führe folgenden Befehl aus, um die App zu starten:
    ```bash
-   npx tauri dev
+   bunx tauri dev
    ```
 *Hinweis: Beim allerersten Start kann dies einen Moment dauern, da Rust alle Abhängigkeiten (Crates) herunterladen und kompilieren muss.*
 
@@ -45,7 +45,7 @@ Möchtest du die App an Freunde weitergeben oder normal auf deinem Computer inst
 1. Öffne das Terminal im Projektordner.
 2. Führe diesen Befehl aus:
    ```bash
-   npx tauri build
+   bunx tauri build
    ```
 Das gebaute Programm (Installer sowie die eigentliche App) findest du anschließend unter:
 `src-tauri/target/release/bundle/`
