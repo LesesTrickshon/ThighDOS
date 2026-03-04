@@ -1,6 +1,6 @@
 // Functionalitys Imports:
 import "./App.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Icon imports:
 import { FaXmark } from "react-icons/fa6";
@@ -8,6 +8,7 @@ import MqttPanel from "./components/MqttPanel";
 
 function App() {
   const splash = "Nenn es ThighDOS ~Tobias Rieger 2026";
+  const [mqttVisable, setMqttVisable] = useState(false);
 
   return (
     <>
@@ -34,29 +35,25 @@ function App() {
       <button
         className="option"
         onClick={() => {
-          const mqttChat = document.getElementById("mqtt-chat");
-          if (mqttChat && mqttChat.style.display == "") {
-            console.log("Moin");
-            console.log(`display: ${mqttChat.style.display}`);
-            mqttChat.style.display = "none";
-          } else if (mqttChat && mqttChat.style.display == "none") {
-            mqttChat.style.display = "";
-          }
+          setMqttVisable(!mqttVisable);
         }}
       >
         Open MQTT Client
       </button>
-
-      <main
-        style={{
-          maxWidth: "800px",
-          margin: "20px auto",
-          padding: "0 20px",
-        }}
-        id="mqtt-chat"
-      >
-        <MqttPanel />
-      </main>
+      {mqttVisable && (
+        <div className="mqttContainer">
+          <main
+            style={{
+              maxWidth: "800px",
+              margin: "20px auto",
+              padding: "0 20px",
+            }}
+            id="mqtt-chat"
+          >
+            <MqttPanel />
+          </main>
+        </div>
+      )}
     </>
   );
 }

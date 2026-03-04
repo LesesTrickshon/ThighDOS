@@ -23,7 +23,7 @@ body {
   width: 500px;
   height: 70px;
   padding: 10px;
-  background-color: #ff5da3;
+  background-color: #fff;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -33,6 +33,7 @@ body {
   border-style: solid;
   border-width: 5px;
   font-weight: bold;
+  filter: drop-shadow(0 0 10px #ffc6ff);
 }
 .warning button {
   width: 70px;
