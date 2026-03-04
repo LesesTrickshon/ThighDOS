@@ -28,6 +28,7 @@ body {
   border-color: #000;
   border-style: solid;
   border-width: 5px;
+  font-weight: bold;
 }
 .warning button {
   width: 70px;
@@ -39,5 +40,4 @@ body {
   border-radius: 20px;
   color: #000;
   text-align: center;
-  
 }

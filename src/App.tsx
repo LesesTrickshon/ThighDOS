@@ -14,9 +14,18 @@ function App() {
         <p style={{ fontStyle: "italic" }}>{splash}</p>
       </div>
 
-      <div className="warning">
-        <p>By using this software you (the user) are viable for any damages!</p>
-        <button><FaXmark /></button>
+      <div className="warning" id="warning">
+        <p>By using this software you (the user) are liable for any damages!</p>
+        <button
+          onClick={() => {
+            const warning: any = document.getElementById("warning");
+            if (warning) {
+              warning.style.display = "none";
+            }
+          }}
+        >
+          <FaXmark />
+        </button>
       </div>
 
       <main style={{ maxWidth: "800px", margin: "20px auto", padding: "0 20px" }}>
