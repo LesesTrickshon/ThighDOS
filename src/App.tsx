@@ -2,26 +2,28 @@
 import "./App.css";
 
 // Icon imports:
-import { FaXmark } from "react-icons/fa6";
 import MqttPanel from "./components/MqttPanel";
 
 function App() {
-  const splash = "Nenn es ThighDOS ~Tobias Rieger 2026";
+  const splash = "Splash Text and stuff";
+
   return (
     <>
-      <div className="top">
+      <div className="header">
         <h1>ThighDOS</h1>
-        <p style={{ fontStyle: "italic" }}>{splash}</p>
+        <p>{splash}</p>
       </div>
 
-      <div className="warning">
-        <p>By using this software you (the user) are viable for any damages!</p>
-        <button><FaXmark /></button>
+      <div className="sketch-box disclaimer" style={{ marginBottom: "20px" }}>
+        <span>We (the ThighDOS Developers) are not viable for anything that the user does with this tool.</span>
+        <button className="btn">Ok</button>
       </div>
 
-      <main style={{ maxWidth: "800px", margin: "20px auto", padding: "0 20px" }}>
+      <button className="btn btn-wide">Create New Requests</button>
+
+      <div className="sketch-box request-panel">
         <MqttPanel />
-      </main>
+      </div>
     </>
   );
 }

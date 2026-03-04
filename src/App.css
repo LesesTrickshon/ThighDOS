@@ -1,43 +1,145 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
 
-  text-align: center;
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: url("/src/assets/backgrounds/2.png");
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.top {
-  filter: drop-shadow(0 0 10px rgba(255, 198, 255, 0.87));
-}
-
-.warning {
-  width: 500px;
-  height: 70px;
-  padding: 10px;
-  background-color: #ff5da3;
+  margin: 0;
+  padding: 0;
+  font-family: 'Patrick Hand', cursive;
+  background-color: #ffffff;
+  color: #2b2b2b;
   display: flex;
-  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Hand-drawn Box Effect */
+.sketch-box {
+  background-color: #fff;
+  border: 3px solid #2b2b2b;
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  padding: 15px 20px;
+  box-shadow: 2px 3px 0px #2b2b2b;
+  transition: all 0.2s ease;
+}
+
+.sketch-box:hover {
+  box-shadow: 4px 5px 0px #2b2b2b;
+  transform: translateY(-2px);
+}
+
+/* Specific elements */
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  font-size: 5rem;
+  margin: 0;
+  line-height: 1;
+}
+
+.header p {
+  transform: rotate(-5deg);
+  display: inline-block;
+  font-size: 1.5rem;
+  margin: 0;
+  margin-top: -10px;
+  margin-left: 100px;
+}
+
+.disclaimer {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 20px;
-  border-color: #000;
-  border-style: solid;
-  border-width: 5px;
+  font-size: 1.2rem;
+  gap: 15px;
 }
-.warning button {
-  width: 70px;
-  height: 70px;
-  background-color: #fff;
-  border-style: solid;
-  border-color: #000;
-  border-width: 3px;
-  border-radius: 20px;
-  color: #000;
+
+.btn {
+  background: white;
+  border: 3px solid #2b2b2b;
+  border-radius: 15px 225px 15px 255px/255px 15px 225px 15px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px 15px;
+  color: #2b2b2b;
+  box-shadow: 2px 2px 0px #2b2b2b;
+  transition: all 0.1s;
+}
+
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #2b2b2b;
+}
+
+.btn-wide {
+  width: 100%;
+  padding: 15px;
+  font-size: 2rem;
+  background-color: #f8f9fa;
+  margin-bottom: 20px;
+}
+
+.btn-stop {
+  background-color: #fbd6d2; /* Light pink/red from concept */
+  width: 100%;
+  padding: 15px;
+  font-size: 2.5rem;
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+}
+
+.request-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.request-panel h2 {
   text-align: center;
-  
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.counter-text {
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.progress-container {
+  height: 25px;
+  width: 100%;
+  border: 3px solid #2b2b2b;
+  border-radius: 225px 15px 255px 15px/15px 255px 15px 225px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #bce3fb; /* Light blue from concept */
+  border-right: 3px solid #2b2b2b;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.status-list {
+  font-size: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }

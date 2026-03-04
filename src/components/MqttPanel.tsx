@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import mqtt from 'mqtt';
-
+import { FaCheckSquare, FaTimes, FaExclamationTriangle } from "react-icons/fa";
 
 const BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL || 'ws://localhost:9001';
 const DEFAULT_TOPIC = import.meta.env.VITE_DEFAULT_TOPIC || 'ThighDOS/Chat';
@@ -8,34 +8,36 @@ const DEFAULT_TOPIC = import.meta.env.VITE_DEFAULT_TOPIC || 'ThighDOS/Chat';
 const MqttPanel: React.FC = () => {
     const [client, setClient] = useState<mqtt.MqttClient | null>(null);
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-    const [topic, setTopic] = useState(DEFAULT_TOPIC);
-    const [message, setMessage] = useState('');
-    const [chatLog, setChatLog] = useState<{ sender: string; text: string; time: string }[]>([]);
 
-    const chatEndRef = useRef<HTMLDivElement>(null);
+    // UI State driven by MQTT
+    const [currentRequests, setCurrentRequests] = useState(40);
+    const [totalRequests, setTotalRequests] = useState(1800);
+    const [successful, setSuccessful] = useState(38);
+    const [failed, setFailed] = useState(2);
+    const [running, setRunning] = useState(1);
 
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [chatLog]);
-
-    const connectMqtt = () => {
-        if (client) {
-            client.end();
-        }
-
+        // Auto-connect on mount
         setStatus('connecting');
         const newClient = mqtt.connect(BROKER_URL);
 
         newClient.on('connect', () => {
             setStatus('connected');
-            newClient.subscribe(topic);
-            const time = new Date().toLocaleTimeString();
-            setChatLog(prev => [...prev, { sender: 'System', text: `Connected to room: ${topic}`, time }]);
+            newClient.subscribe(DEFAULT_TOPIC);
         });
 
         newClient.on('message', (_receivedTopic, payload) => {
-            const time = new Date().toLocaleTimeString();
-            setChatLog(prev => [...prev, { sender: 'Remote', text: payload.toString(), time }]);
+            try {
+                // Expecting JSON: {"current": 45, "total": 1800, "successful": 43, "failed": 2, "running": 1}
+                const data = JSON.parse(payload.toString());
+                if (data.current !== undefined) setCurrentRequests(data.current);
+                if (data.total !== undefined) setTotalRequests(data.total);
+                if (data.successful !== undefined) setSuccessful(data.successful);
+                if (data.failed !== undefined) setFailed(data.failed);
+                if (data.running !== undefined) setRunning(data.running);
+            } catch (e) {
+                console.log("Received non-JSON MQTT message:", payload.toString());
+            }
         });
 
         newClient.on('error', (err) => {
@@ -43,72 +45,58 @@ const MqttPanel: React.FC = () => {
             setStatus('disconnected');
         });
 
-        newClient.on('close', () => {
-            setStatus('disconnected');
-        });
+        newClient.on('close', () => setStatus('disconnected'));
 
         setClient(newClient);
-    };
 
-    const sendMessage = () => {
-        if (client && status === 'connected' && message.trim() !== '') {
-            client.publish(topic, message);
-            const time = new Date().toLocaleTimeString();
-            setChatLog(prev => [...prev, { sender: 'You', text: message, time }]);
-            setMessage('');
+        return () => {
+            newClient.end();
+        };
+    }, []);
+
+    const handleStop = () => {
+        if (client && status === 'connected') {
+            client.publish(DEFAULT_TOPIC, JSON.stringify({ action: "stop" }));
         }
     };
 
+    const progressPercentage = totalRequests > 0 ? (currentRequests / totalRequests) * 100 : 0;
+
     return (
-        <div className="mqtt-panel" style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', background: '#1a1a1a', color: '#fff' }}>
-            <h2>MQTT Chat & Control</h2>
-            <div style={{ marginBottom: '10px' }}>
-                <span style={{ marginRight: '10px' }}>
-                    Status: <b style={{ color: status === 'connected' ? '#4caf50' : status === 'connecting' ? '#ff9800' : '#f44336' }}>
-                        {status.toUpperCase()}
-                    </b>
-                </span>
-                <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Topic/Room"
-                    style={{ background: '#333', color: '#fff', border: '1px solid #555', padding: '5px' }}
-                />
-                <button onClick={connectMqtt} style={{ marginLeft: '10px', cursor: 'pointer', padding: '5px 10px' }}>
-                    {status === 'connected' ? 'Reconnect' : 'Connect'}
-                </button>
+        <>
+            <h2>Request Counter</h2>
+
+            <div className="counter-text">
+                {currentRequests} // {totalRequests}
             </div>
 
-            <div className="chat-log" style={{ height: '300px', overflowY: 'auto', background: '#000', padding: '10px', borderRadius: '4px', marginBottom: '10px', border: '1px solid #444' }}>
-                {chatLog.map((log, index) => (
-                    <div key={index} style={{ marginBottom: '5px', fontSize: '0.9em' }}>
-                        <span style={{ color: '#888', marginRight: '5px' }}>[{log.time}]</span>
-                        <b style={{ color: log.sender === 'You' ? '#94d2bd' : log.sender === 'System' ? '#ee9b00' : '#0a9396' }}>{log.sender}:</b>
-                        <span style={{ marginLeft: '5px' }}>{log.text}</span>
+            <div className="progress-container">
+                <div className="progress-bar" style={{ width: `${progressPercentage}%` }}></div>
+            </div>
+
+            <div className="sketch-box" style={{ margin: "10px 0", padding: "10px" }}>
+                <div className="status-list">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaCheckSquare color="#00d200" />
+                        <span>Successful: {successful}</span>
                     </div>
-                ))}
-                <div ref={chatEndRef} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaTimes color="#ff0000" />
+                        <span>Failed: {failed}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaExclamationTriangle color="#ffcc00" />
+                        <span>Still Running: {running}</span>
+                    </div>
+                </div>
             </div>
 
-            <div style={{ display: 'flex' }}>
-                <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="Type a message..."
-                    style={{ flex: 1, background: '#333', color: '#fff', border: '1px solid #555', padding: '10px', borderRadius: '4px 0 0 4px' }}
-                />
-                <button onClick={sendMessage} style={{ padding: '10px 20px', borderRadius: '0 4px 4px 0', cursor: 'pointer', background: '#005f73', color: '#fff', border: 'none' }}>
-                    Send
-                </button>
-            </div>
+            <button className="btn btn-stop" onClick={handleStop}>STOP</button>
 
-            <div style={{ marginTop: '15px', fontSize: '0.8em', color: '#aaa' }}>
-                <i>Note: Connecting to {BROKER_URL} via WebSockets. Ensure your broker supports WS on port 9001.</i>
+            <div style={{ textAlign: 'center', fontSize: '0.9rem', color: status === 'connected' ? '#00d200' : '#ff0000', marginTop: '10px' }}>
+                MQTT {status.toUpperCase()}
             </div>
-        </div>
+        </>
     );
 };
 
