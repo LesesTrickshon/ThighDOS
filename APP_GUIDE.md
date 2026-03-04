@@ -32,7 +32,7 @@ Wenn du an der App arbeiten möchtest oder sie einfach testen willst, nutzt du d
    ```
 3. Führe folgenden Befehl aus, um die App zu starten:
    ```bash
-   bunx tauri dev
+   bun run tauri dev
    ```
 *Hinweis: Beim allerersten Start kann dies einen Moment dauern, da Rust alle Abhängigkeiten (Crates) herunterladen und kompilieren muss.*
 
@@ -45,7 +45,7 @@ Möchtest du die App an Freunde weitergeben oder normal auf deinem Computer inst
 1. Öffne das Terminal im Projektordner.
 2. Führe diesen Befehl aus:
    ```bash
-   bunx tauri build
+   bun run tauri build
    ```
 Das gebaute Programm (Installer sowie die eigentliche App) findest du anschließend unter:
 `src-tauri/target/release/bundle/`
