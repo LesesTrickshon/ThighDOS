@@ -1,6 +1,7 @@
 // Functionalitys Imports:
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import DosSettings from "./components/DosSettings";
 
 // Icon imports:
 import { FaXmark } from "react-icons/fa6";
@@ -9,6 +10,7 @@ import MqttPanel from "./components/MqttPanel";
 function App() {
   const splash = "Nenn es ThighDOS ~Tobias Rieger 2026";
   const [mqttVisable, setMqttVisable] = useState(false);
+  const [dosSettingsVisable, setDosSettingsVisable] = useState(true);
 
   return (
     <>
@@ -31,7 +33,15 @@ function App() {
         </button>
       </div>
 
-      <button className="option">New DOS List</button>
+      <button
+        className="option"
+        onClick={() => {
+          setDosSettingsVisable(!dosSettingsVisable);
+        }}
+      >
+        New DOS List
+      </button>
+
       <button
         className="option"
         onClick={() => {
@@ -52,6 +62,37 @@ function App() {
           >
             <MqttPanel />
           </main>
+        </div>
+      )}
+
+      {dosSettingsVisable && (
+        <div
+          className="dosSettings"
+          style={{
+            position: "absolute",
+            width: "700px",
+            height: "500px",
+            maxHeight: "80%",
+            margin: "20px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor: "#fff",
+            borderStyle: "solid",
+            borderRadius: "20px",
+            borderWidth: "5px",
+            filter: "drop-shadow(0 0 20px #ffc6ff)",
+          }}
+        >
+          <DosSettings />
+          <button
+            onClick={() => {
+              setDosSettingsVisable(!dosSettingsVisable);
+            }}
+          >
+            Back
+          </button>
         </div>
       )}
     </>
