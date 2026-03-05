@@ -36,7 +36,7 @@ pub async fn connect_mqtt(
     // Subscribe to everything for discovery
     client.subscribe("#", QoS::AtMostOnce).await.map_err(|e| e.to_string())?;
 
-    let client_clone = client.clone();
+
     let mut state_client = state.client.lock().await;
     *state_client = Some(client);
 
