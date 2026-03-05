@@ -53,45 +53,67 @@ const MqttPanel: React.FC = () => {
     };
 
     useEffect(() => {
-        const unlistenMsg = listen('mqtt-message', (event: any) => {
-            const { topic: msgTopic, payload } = event.payload;
-            if (!isDosActiveRef.current || Math.random() < 0.05) {
-                addLog(`[${msgTopic}] IN: ${payload}`, 'recv');
-            }
-        });
+        // Auto-scroll logs
+        if (logsEndRef.current) {
+            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [logs]);
 
-        const unlistenDiscovery = listen('mqtt-discovery', (event: any) => {
-            const device = event.payload as DiscoveryDevice;
-            setDiscoveredDevices(prev => ({
-                ...prev,
-                [device.device_id]: device
-            }));
-            addLog(`✨ Discovered Device: ${device.device_id}`, 'sys');
-        });
+    useEffect(() => {
+        const setupListeners = async () => {
+            const unlistenMsg = await listen('mqtt-message', (event: any) => {
+                const { topic: msgTopic, payload } = event.payload;
+                if (!isDosActiveRef.current || Math.random() < 0.05) {
+                    addLog(`[${msgTopic}] IN: ${payload}`, 'recv');
+                }
+            });
 
-        const unlistenError = listen('mqtt-error', (event: any) => {
-            addLog(`MQTT Error: ${event.payload}`, 'sys');
-            setStatus('disconnected');
-        });
+            const unlistenDiscovery = await listen('mqtt-discovery', (event: any) => {
+                const device = event.payload as DiscoveryDevice;
+                setDiscoveredDevices(prev => ({
+                    ...prev,
+                    [device.device_id]: device
+                }));
+                addLog(`✨ Discovered Device: ${device.device_id}`, 'sys');
+            });
 
+            const unlistenError = await listen('mqtt-error', (event: any) => {
+                addLog(`MQTT Error: ${event.payload}`, 'sys');
+                setStatus('disconnected');
+            });
+
+            return () => {
+                unlistenMsg();
+                unlistenDiscovery();
+                unlistenError();
+            };
+        };
+
+        const cleanup = setupListeners();
         return () => {
-            unlistenMsg.then(u => u());
-            unlistenDiscovery.then(u => u());
-            unlistenError.then(u => u());
+            cleanup.then(fn => fn());
         };
     }, []);
 
     const connectToMqtt = async () => {
         setStatus('connecting');
-        addLog(`Connecting to ${brokerIp}:${brokerPort}...`, 'sys');
+        addLog(`Connecting via Rust Backend to ${brokerIp}:${brokerPort}...`, 'sys');
         try {
             await invoke('connect_mqtt', { brokerUrl: brokerIp, port: brokerPort });
             setStatus('connected');
-            addLog(`Connected & Listening to ALL (#) for Discovery`, 'sys');
+            addLog(`Connected! Discovery active (listening to everything).`, 'sys');
         } catch (e: any) {
             setStatus('disconnected');
             addLog(`Failed to connect: ${e}`, 'sys');
         }
+    };
+
+    const disconnectMqtt = () => {
+        // In a real app, we'd invoke a 'disconnect' command, but for now we just reset state
+        setStatus('disconnected');
+        addLog(`Disconnected by user.`, 'sys');
+        setIsDosActive(false);
+        isDosActiveRef.current = false;
     };
 
     const sendChatMessage = async () => {
@@ -106,7 +128,7 @@ const MqttPanel: React.FC = () => {
     };
 
     const startDosTest = async () => {
-        if (!client || status !== 'connected') {
+        if (status !== 'connected') {
             addLog("Cannot start Test: No MQTT connection. :(", 'sys');
             return;
         }
@@ -114,26 +136,23 @@ const MqttPanel: React.FC = () => {
         setIsDosActive(true);
         isDosActiveRef.current = true;
         setStats({ current: 0, total: reqAmount, success: 0, fail: 0 });
-        addLog(`[System] Initializing Cute Stress Test for ${reqAmount} requests at ${reqInterval}ms interval...`, 'sys');
+        addLog(`[System] Initializing Stress Test sequence on ${topic}...`, 'sys');
 
         let currentCount = 0;
         let successCount = 0;
         let failCount = 0;
 
         for (let i = 0; i < reqAmount; i++) {
-            if (!isDosActiveRef.current) break; // aborted
+            if (!isDosActiveRef.current) break;
 
             try {
-                client.publish(topic, dosPayload, { qos: 0 }, (err) => {
-                    if (err) failCount++;
-                    else successCount++;
-                });
+                await invoke('publish_mqtt', { topic, payload: dosPayload });
+                successCount++;
             } catch (e) {
                 failCount++;
             }
             currentCount++;
 
-            // Update UI Stats every 10 items or if interval > 100, every item
             if (reqInterval > 100 || currentCount % 10 === 0) {
                 setStats({ current: currentCount, total: reqAmount, success: successCount, fail: failCount });
             }
@@ -143,29 +162,27 @@ const MqttPanel: React.FC = () => {
             }
         }
 
-        // Final Sync
         setStats({ current: currentCount, total: reqAmount, success: successCount, fail: failCount });
         setIsDosActive(false);
         isDosActiveRef.current = false;
-        addLog(`[System] Test Finished.Total sent: ${currentCount} YAY!`, 'sys');
+        addLog(`[System] Sequence Finished. Total sent: ${currentCount}`, 'sys');
     };
 
     const stopDosTest = () => {
         setIsDosActive(false);
         isDosActiveRef.current = false;
-        addLog(`[System] Test Aborted by User.`, 'sys');
+        addLog(`[System] Sequence Aborted by User.`, 'sys');
     };
 
     const exportLogs = () => {
-        const textData = logs.map(l => `[${l.time}][${l.type.toUpperCase()}] ${l.text} `).join('\n');
+        const textData = logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.text}`).join('\n');
         const blob = new Blob([textData], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `thighdos_cute_logs_${Date.now()}.txt`;
+        a.download = `thighdos_logs_${Date.now()}.txt`;
         a.click();
         URL.revokeObjectURL(url);
-        addLog(`[System] Logs exported nicely to file.`, 'sys');
     };
 
     const currentPercent = stats.total > 0 ? (stats.current / stats.total) * 100 : 0;
@@ -173,20 +190,20 @@ const MqttPanel: React.FC = () => {
     return (
         <>
             <div className="panel" style={{ marginBottom: "20px" }}>
-                <h2 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,190,210,0.4)", paddingBottom: "10px", color: "#ff85a2" }}>✧ CONNECTION SETUP ✧</h2>
+                <h2 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,190,210,0.4)", paddingBottom: "10px", color: "#ff85a2" }}>✧ CONNECTION SETUP (RUST BACKEND) ✧</h2>
                 <div className="flex-split">
                     <div className="input-group flex-half">
-                        <label>Broker IP / URL</label>
-                        <input type="text" value={brokerUrl} onChange={(e) => setBrokerUrl(e.target.value)} disabled={status !== 'disconnected'} />
+                        <label>Broker IP</label>
+                        <input type="text" value={brokerIp} onChange={(e) => setBrokerIp(e.target.value)} disabled={status !== 'disconnected'} />
                     </div>
                     <div className="input-group flex-half">
-                        <label>Topic Address</label>
-                        <input type="text" value={topic} onChange={(e) => setTopic(e.target.value)} disabled={status !== 'disconnected'} />
+                        <label>Port</label>
+                        <input type="number" value={brokerPort} onChange={(e) => setBrokerPort(Number(e.target.value))} disabled={status !== 'disconnected'} />
                     </div>
                 </div>
                 <div className="flex-row" style={{ marginTop: "10px" }}>
                     <div style={{ fontWeight: 800, color: "#a88bb3" }}>
-                        Status: <span style={{ color: status === 'connected' ? '#ff85a2' : status === 'connecting' ? '#ffadad' : '#bfa2c8' }}>{status.toUpperCase()}</span>
+                        Status: <span style={{ color: status === 'connected' ? '#ff85a2' : '#bfa2c8' }}>{status.toUpperCase()}</span>
                     </div>
                     <div>
                         {status === 'disconnected' ? (
@@ -198,12 +215,27 @@ const MqttPanel: React.FC = () => {
                 </div>
             </div>
 
+            {/* Discovery Section */}
+            {Object.keys(discoveredDevices).length > 0 && (
+                <div className="panel" style={{ marginBottom: "20px" }}>
+                    <h2 style={{ marginTop: 0, color: "#ff85a2", fontSize: "1rem" }}>✨ DISCOVERED TASMOTA DEVICES</h2>
+                    <div className="stats-grid">
+                        {Object.values(discoveredDevices).map(device => (
+                            <div key={device.device_id} className="stat-box" style={{ cursor: 'pointer' }} onClick={() => setTopic(`cmnd/${device.device_id}/status`)}>
+                                <div className="title"><FaMicrochip /> DEVICE</div>
+                                <div className="value success" style={{ fontSize: '0.9rem' }}>{device.device_id}</div>
+                                <div style={{ fontSize: '0.7rem', color: '#a88bb3' }}>Click to Command</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="flex-split">
-                {/* Chat / Logs Box */}
                 <div className="panel flex-half" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div className="flex-row" style={{ marginBottom: "10px", borderBottom: "1px solid rgba(255,190,210,0.4)", paddingBottom: "5px" }}>
-                        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#ff85a2" }}>✧ ACTIVITY LOGS ✧</h2>
-                        <button className="btn" style={{ padding: "6px 10px", fontSize: "0.85rem" }} onClick={exportLogs}><FaDownload /> SAVE LOGS</button>
+                        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#ff85a2" }}>✧ MQTT TRAFFIC ✧</h2>
+                        <button className="btn" style={{ padding: "6px 10px", fontSize: "0.85rem" }} onClick={exportLogs}><FaDownload /> SAVE</button>
                     </div>
 
                     <div className="terminal-window">
@@ -217,55 +249,52 @@ const MqttPanel: React.FC = () => {
                     </div>
 
                     <div className="input-group" style={{ margin: 0 }}>
-                        <label>Say something nice (Manual Chat)</label>
+                        <label>Target Topic: <input style={{ padding: '2px', marginLeft: '5px' }} type="text" value={topic} onChange={e => setTopic(e.target.value)} /></label>
                         <div className="input-row">
-                            <input type="text" placeholder="Type here..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()} disabled={status !== 'connected'} />
+                            <input type="text" placeholder="Send value / command..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()} disabled={status !== 'connected'} />
                             <button className="btn" onClick={sendChatMessage} disabled={status !== 'connected'} style={{ padding: "12px 18px" }}><FaPaperPlane /></button>
                         </div>
                     </div>
                 </div>
 
-                {/* DOS BOX */}
                 <div className="panel flex-half">
-                    <h2 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,190,210,0.4)", paddingBottom: "10px", color: "#ff85a2" }}>✧ CUTE STRESS TEST ENGINE ✧</h2>
+                    <h2 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,190,210,0.4)", paddingBottom: "10px", color: "#ff85a2" }}>✧ COMMAND ENGINE ✧</h2>
                     <div className="flex-split">
                         <div className="input-group flex-half">
-                            <label>Requests Amount</label>
+                            <label>Packets</label>
                             <input type="number" value={reqAmount} onChange={(e) => setReqAmount(Number(e.target.value))} disabled={isDosActive} />
                         </div>
                         <div className="input-group flex-half">
-                            <label>Speed Interval (ms)</label>
+                            <label>Interval (ms)</label>
                             <input type="number" value={reqInterval} onChange={(e) => setReqInterval(Number(e.target.value))} disabled={isDosActive} />
                         </div>
                     </div>
                     <div className="input-group">
-                        <label>Packet Payload (Data)</label>
+                        <label>Custom Payload</label>
                         <input type="text" value={dosPayload} onChange={(e) => setDosPayload(e.target.value)} disabled={isDosActive} />
                     </div>
 
                     {!isDosActive ? (
                         <button className="btn btn-wide" onClick={startDosTest} disabled={status !== 'connected'}>
-                            <FaPlay style={{ marginRight: "10px" }} /> START TEST (◕‿◕)
+                            <FaPlay style={{ marginRight: "10px" }} /> EXECUTE SEQUENCE
                         </button>
                     ) : (
                         <button className="btn btn-stop btn-wide" onClick={stopDosTest}>
-                            <FaStop style={{ marginRight: "10px" }} /> ABORT TEST (シ_ _)シ
+                            <FaStop style={{ marginRight: "10px" }} /> ABORT
                         </button>
                     )}
 
-                    {/* REQUEST COUNTER ONLY VISIBLE WHEN TEST STARTED OR STATS EXIST */}
-                    {(isDosActive || stats.total > 0) && (
+                    {(isDosActive || stats.current > 0) && (
                         <div style={{ marginTop: "20px" }}>
                             <div style={{ textAlign: "center", marginBottom: "5px", color: "#a88bb3", fontWeight: 700 }}>
-                                TEST PROGRESS: {stats.current} / {stats.total}
+                                PROGRESS: {stats.current} / {stats.total}
                             </div>
                             <div className="progress-container">
-                                <div className="progress-bar" style={{ width: `${currentPercent}% ` }}></div>
+                                <div className="progress-bar" style={{ width: `${currentPercent}%` }}></div>
                             </div>
                             <div className="stats-grid">
                                 <div className="stat-box"><div className="title">SENT</div><div className="value success">{stats.current}</div></div>
-                                <div className="stat-box"><div className="title">FAILED</div><div className="value fail">{stats.fail}</div></div>
-                                <div className="stat-box"><div className="title">PENDING</div><div className="value total">{stats.total - stats.current}</div></div>
+                                <div className="stat-box"><div className="title">FAIL</div><div className="value fail">{stats.fail}</div></div>
                             </div>
                         </div>
                     )}
