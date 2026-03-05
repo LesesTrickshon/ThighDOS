@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import mqtt from 'mqtt';
-import { FaPlay, FaStop, FaDownload, FaPaperPlane, FaHeart } from 'react-icons/fa';
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { FaPlay, FaStop, FaDownload, FaPaperPlane, FaHeart, FaMicrochip } from 'react-icons/fa';
 
 interface LogEntry {
     id: number;
@@ -9,22 +10,30 @@ interface LogEntry {
     time: string;
 }
 
+interface DiscoveryDevice {
+    device_id: string;
+    config: any;
+}
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MqttPanel: React.FC = () => {
-    const [client, setClient] = useState<mqtt.MqttClient | null>(null);
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
     // Connection State
-    const [brokerUrl, setBrokerUrl] = useState(import.meta.env.VITE_MQTT_BROKER_URL || 'ws://localhost:9001');
-    const [topic, setTopic] = useState(import.meta.env.VITE_DEFAULT_TOPIC || 'ThighDOS/Chat');
+    const [brokerIp, setBrokerIp] = useState('172.30.148.28');
+    const [brokerPort, setBrokerPort] = useState(1883);
+    const [topic, setTopic] = useState('ThighDOS/Chat');
+
+    // Discovery
+    const [discoveredDevices, setDiscoveredDevices] = useState<Record<string, DiscoveryDevice>>({});
 
     // DOS & Stats
     const [isDosActive, setIsDosActive] = useState(false);
     const [reqAmount, setReqAmount] = useState(100);
     const [reqInterval, setReqInterval] = useState(10);
     const [dosPayload, setDosPayload] = useState('{"msg": "kawaii_test ~"}');
-    const [stats, setStats] = useState({ current: 0, total: 0, success: 0, fail: 0 });
+    const [stats, setStats] = useState({ current: 0, total: 100, success: 0, fail: 0 });
     const isDosActiveRef = useRef(false);
 
     // Chat & Logs
@@ -37,81 +46,63 @@ const MqttPanel: React.FC = () => {
         logIdRef.current++;
         setLogs((prev) => {
             const newLogs = [...prev, { id: logIdRef.current, text, type, time: new Date().toLocaleTimeString() }];
-            if (newLogs.length > 500) return newLogs.slice(-500); // Prevent memory issues
+            const limit = 200;
+            if (newLogs.length > limit) return newLogs.slice(-limit);
             return newLogs;
         });
     };
 
     useEffect(() => {
-        // Scroll to bottom of logs
-        if (logsEndRef.current) {
-            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [logs]);
-
-    useEffect(() => {
-        // Cleanup on unmount
-        return () => {
-            if (client) client.end();
-        };
-    }, [client]);
-
-    const connectToMqtt = () => {
-        if (client) {
-            client.end();
-            setClient(null);
-        }
-        setStatus('connecting');
-        addLog(`Attempting connection to ${brokerUrl}...`, 'sys');
-
-        const newClient = mqtt.connect(brokerUrl);
-
-        newClient.on('connect', () => {
-            setStatus('connected');
-            addLog(`Connected to Broker.Subscribing to Topic / Address: ${topic} `, 'sys');
-            newClient.subscribe(topic);
-        });
-
-        newClient.on('message', (receivedTopic, payload) => {
-            const txt = payload.toString();
-            // To avoid huge lag during Dos testing, we don't log ALL incoming messages if DOS is active 
-            // (assuming they might echo back), but we'll try to log them safely.
+        const unlistenMsg = listen('mqtt-message', (event: any) => {
+            const { topic: msgTopic, payload } = event.payload;
             if (!isDosActiveRef.current || Math.random() < 0.05) {
-                addLog(`[${receivedTopic}]IN: ${txt} `, 'recv');
+                addLog(`[${msgTopic}] IN: ${payload}`, 'recv');
             }
         });
 
-        newClient.on('error', (err) => {
-            setStatus('disconnected');
-            addLog(`MQTT Error: ${err.message} `, 'sys');
+        const unlistenDiscovery = listen('mqtt-discovery', (event: any) => {
+            const device = event.payload as DiscoveryDevice;
+            setDiscoveredDevices(prev => ({
+                ...prev,
+                [device.device_id]: device
+            }));
+            addLog(`✨ Discovered Device: ${device.device_id}`, 'sys');
         });
 
-        newClient.on('close', () => {
+        const unlistenError = listen('mqtt-error', (event: any) => {
+            addLog(`MQTT Error: ${event.payload}`, 'sys');
             setStatus('disconnected');
-            addLog(`Connection closed.`, 'sys');
         });
 
-        setClient(newClient);
-    };
+        return () => {
+            unlistenMsg.then(u => u());
+            unlistenDiscovery.then(u => u());
+            unlistenError.then(u => u());
+        };
+    }, []);
 
-    const disconnectMqtt = () => {
-        if (client) {
-            client.end();
-            setClient(null);
+    const connectToMqtt = async () => {
+        setStatus('connecting');
+        addLog(`Connecting to ${brokerIp}:${brokerPort}...`, 'sys');
+        try {
+            await invoke('connect_mqtt', { brokerUrl: brokerIp, port: brokerPort });
+            setStatus('connected');
+            addLog(`Connected & Listening to ALL (#) for Discovery`, 'sys');
+        } catch (e: any) {
+            setStatus('disconnected');
+            addLog(`Failed to connect: ${e}`, 'sys');
         }
-        setStatus('disconnected');
-        addLog(`Disconnected by user.`, 'sys');
-        setIsDosActive(false);
-        isDosActiveRef.current = false;
     };
 
-    const sendChatMessage = () => {
-        if (!client || status !== 'connected') return;
-        if (!chatInput.trim()) return;
-
-        client.publish(topic, chatInput);
-        addLog(`OUT => ${chatInput} `, 'sent');
-        setChatInput('');
+    const sendChatMessage = async () => {
+        if (status !== 'connected' || !chatInput.trim()) return;
+        try {
+            await invoke('publish_mqtt', { topic, payload: chatInput });
+            addLog(`OUT => ${chatInput}`, 'sent');
+            setChatInput('');
+        } catch (e: any) {
+            addLog(`Send Error: ${e}`, 'sys');
+        }
     };
 
     const startDosTest = async () => {
