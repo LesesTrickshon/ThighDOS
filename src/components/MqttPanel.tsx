@@ -102,10 +102,18 @@ const MqttPanel: React.FC = () => {
             await invoke('connect_mqtt', { brokerUrl: brokerIp, port: brokerPort });
             setStatus('connected');
             addLog(`Connected! Discovery active (listening to everything).`, 'sys');
+            // Auto-trigger fallback discovery by asking all tasmota devices for status!
+            await invoke('publish_mqtt', { topic: "cmnd/tasmotas/status0", payload: "" });
         } catch (e: any) {
             setStatus('disconnected');
             addLog(`Failed to connect: ${e}`, 'sys');
         }
+    };
+
+    const wakeUpDevices = async () => {
+        if (status !== 'connected') return;
+        addLog(`[System] Sending 'status0' broadcast to all Tasmota devices...`, 'sys');
+        await invoke('publish_mqtt', { topic: "cmnd/tasmotas/status0", payload: "" });
     };
 
     const disconnectMqtt = () => {
@@ -191,17 +199,22 @@ const MqttPanel: React.FC = () => {
         <>
             <div className="panel" style={{ marginBottom: "20px" }}>
                 <h2 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,190,210,0.4)", paddingBottom: "10px", color: "#ff85a2" }}>✧ CONNECTION SETUP (RUST BACKEND) ✧</h2>
-                <div className="flex-split">
-                    <div className="input-group flex-half">
+                <div className="flex-split" style={{ marginBottom: "10px" }}>
+                    <div className="input-group">
                         <label>Broker IP</label>
                         <input type="text" value={brokerIp} onChange={(e) => setBrokerIp(e.target.value)} disabled={status !== 'disconnected'} />
                     </div>
-                    <div className="input-group flex-half">
+                    <div className="input-group" style={{ marginLeft: "10px" }}>
                         <label>Port</label>
                         <input type="number" value={brokerPort} onChange={(e) => setBrokerPort(Number(e.target.value))} disabled={status !== 'disconnected'} />
                     </div>
                 </div>
-                <div className="flex-row" style={{ marginTop: "10px" }}>
+                <div className="input-group">
+                    <label>Target / Chat Topic</label>
+                    <input type="text" value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. ThighDOS/Chat or cmnd/HHS/status" />
+                </div>
+
+                <div className="flex-row" style={{ marginTop: "15px" }}>
                     <div style={{ fontWeight: 800, color: "#a88bb3" }}>
                         Status: <span style={{ color: status === 'connected' ? '#ff85a2' : '#bfa2c8' }}>{status.toUpperCase()}</span>
                     </div>
@@ -216,20 +229,29 @@ const MqttPanel: React.FC = () => {
             </div>
 
             {/* Discovery Section */}
-            {Object.keys(discoveredDevices).length > 0 && (
+            {(Object.keys(discoveredDevices).length > 0 || status === 'connected') && (
                 <div className="panel" style={{ marginBottom: "20px" }}>
-                    <h2 style={{ marginTop: 0, color: "#ff85a2", fontSize: "1rem" }}>✨ DISCOVERED TASMOTA DEVICES</h2>
-                    <div className="stats-grid">
-                        {Object.values(discoveredDevices).map(device => (
-                            <div key={device.device_id} className="stat-box" style={{ cursor: 'pointer' }} onClick={() => setTopic(`cmnd/${device.device_id}/status`)}>
-                                <div className="title"><FaMicrochip /> DEVICE</div>
-                                <div className="value success" style={{ fontSize: '0.9rem' }}>{device.device_id}</div>
-                                <div style={{ fontSize: '0.7rem', color: '#a88bb3' }}>Click to Command</div>
-                            </div>
-                        ))}
+                    <div className="flex-row" style={{ marginBottom: "10px" }}>
+                        <h2 style={{ margin: 0, color: "#ff85a2", fontSize: "1rem" }}>✨ DISCOVERED TASMOTA DEVICES</h2>
+                        <button className="btn" style={{ fontSize: "0.75rem", padding: "4px 8px" }} onClick={wakeUpDevices}>Scan / Wake Up</button>
                     </div>
+                    {Object.keys(discoveredDevices).length === 0 ? (
+                        <div style={{ color: '#bfa2c8', fontSize: '0.85rem' }}>Listening for devices... Click Scan if empty.</div>
+                    ) : (
+                        <div className="stats-grid">
+                            {Object.values(discoveredDevices).map(device => (
+                                <div key={device.device_id} className="stat-box" style={{ cursor: 'pointer' }} onClick={() => setTopic(`cmnd/${device.device_id}/status`)}>
+                                    <div className="title"><FaMicrochip /> DEVICE</div>
+                                    <div className="value success" style={{ fontSize: '0.9rem' }}>{device.device_id}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#a88bb3' }}>Click to Command</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
+
+
 
             <div className="flex-split">
                 <div className="panel flex-half" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -249,7 +271,7 @@ const MqttPanel: React.FC = () => {
                     </div>
 
                     <div className="input-group" style={{ margin: 0 }}>
-                        <label>Target Topic: <input style={{ padding: '2px', marginLeft: '5px' }} type="text" value={topic} onChange={e => setTopic(e.target.value)} /></label>
+                        <label>Publish to target Topic ({topic}):</label>
                         <div className="input-row">
                             <input type="text" placeholder="Send value / command..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()} disabled={status !== 'connected'} />
                             <button className="btn" onClick={sendChatMessage} disabled={status !== 'connected'} style={{ padding: "12px 18px" }}><FaPaperPlane /></button>

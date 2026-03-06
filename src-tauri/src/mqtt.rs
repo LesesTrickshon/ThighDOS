@@ -48,10 +48,20 @@ pub async fn connect_mqtt(
                         let topic = publish.topic.clone();
                         let payload = String::from_utf8_lossy(&publish.payload).to_string();
 
-                        // Check for Tasmota Discovery
+                        // 1. Check for Tasmota Discovery Config
                         if topic.contains("tasmota/discovery") && topic.ends_with("/config") {
                             if let Ok(config) = serde_json::from_str::<serde_json::Value>(&payload) {
                                 let device_id = topic.split('/').nth(2).unwrap_or("unknown").to_string();
+                                let discovery = MqttDiscovery { device_id, config };
+                                let _ = app_handle.emit("mqtt-discovery", discovery);
+                            }
+                        } 
+                        // 2. Fallback: Detect active devices from "tele/DEVICE/..." or "stat/DEVICE/..."
+                        else if topic.starts_with("tele/") || topic.starts_with("stat/") {
+                            let parts: Vec<&str> = topic.split('/').collect();
+                            if parts.len() >= 3 {
+                                let device_id = parts[1].to_string();
+                                let config = serde_json::json!({"type": "auto-detected via traffic", "topic": topic});
                                 let discovery = MqttDiscovery { device_id, config };
                                 let _ = app_handle.emit("mqtt-discovery", discovery);
                             }
