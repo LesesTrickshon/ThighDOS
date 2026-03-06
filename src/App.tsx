@@ -10,7 +10,7 @@ import MqttPanel from "./components/MqttPanel";
 function App() {
   const splash = "Nenn es ThighDOS ~Tobias Rieger 2026";
   const [mqttVisable, setMqttVisable] = useState(false);
-  const [dosSettingsVisable, setDosSettingsVisable] = useState(true);
+  const [dosSettingsVisable, setDosSettingsVisable] = useState(false);
 
   return (
     <>
